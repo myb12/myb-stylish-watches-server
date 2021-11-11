@@ -27,7 +27,18 @@ const run = async () => {
     try {
         await client.connect();
         const database = client.db("watchesDB");
+        const productCollection = database.collection("products");
+        const orderCollection = database.collection("orders");
         console.log('DB is connected');
+
+        //======POST API for Add Product======//
+        app.post('/product', async (req, res) => {
+            const product = req.body;
+            console.log(product);
+            const result = await productCollection.insertOne(product);
+
+            res.json(result);
+        })
 
         //======POST API for orders======//
         app.post('/orders', async (req, res) => {
