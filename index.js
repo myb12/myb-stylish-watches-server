@@ -14,11 +14,71 @@ const uri = 'mongodb+srv://myb-watches:BvIrMEvOfbTJT4Fj@cluster0.ig1ef.mongodb.n
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 
+//======Custom function for getting all item from Database======//
+const getAllItem = async (req, res, collection) => {
+    const cursor = await collection.find({});
+    const items = await cursor.toArray();
+    res.send(items);
+}
+
+
+
 const run = async () => {
     try {
         await client.connect();
         const database = client.db("watchesDB");
         console.log('DB is connected');
+
+        //======POST API for orders======//
+        app.post('/orders', async (req, res) => {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+
+            res.json(result);
+        })
+
+        //=====GET API for specific orders======//
+        app.post('/my-orders', async (req, res) => {
+            const { email } = req.query;
+            const query = { email: email };
+            const orders = await orderCollection.find(query).toArray();
+            res.json(orders);
+        })
+
+        //=====DELETE API for my-orders======//
+        app.delete('/my-orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+
+            const result = await orderCollection.deleteOne(query);
+
+            res.json(result);
+        })
+
+        //======GET API for all orders======// 
+        app.get('/all-orders', async (req, res) => {
+            getAllItem(req, res, orderCollection);
+        })
+
+        //======PUT API to update order status======//
+        app.put('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+
+            const updateDoc = {
+                $set: {
+                    orderStatus: "Approved",
+                },
+            };
+
+            const result = await orderCollection.updateOne(filter, updateDoc, options);
+
+            res.json(result);
+        })
+
+
     } finally {
         // await client.close();
     }
