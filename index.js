@@ -29,6 +29,7 @@ const run = async () => {
         const database = client.db("watchesDB");
         const productCollection = database.collection("products");
         const orderCollection = database.collection("orders");
+        const reviewCollection = database.collection("reviews");
         console.log('DB is connected');
 
         //======POST API for Add Product======//
@@ -40,9 +41,25 @@ const run = async () => {
             res.json(result);
         })
 
+        //======GET API for products======// 
+        app.get('/products', async (req, res) => {
+            getAllItem(req, res, productCollection);
+        })
+
+        //=====GET API for specific product======//
+        app.get('/product/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+
+            const product = await productCollection.findOne(query);
+            res.send(product);
+        })
+
+
         //======POST API for orders======//
         app.post('/orders', async (req, res) => {
             const order = req.body;
+            console.log(order);
             const result = await orderCollection.insertOne(order);
 
             res.json(result);
@@ -66,10 +83,27 @@ const run = async () => {
             res.json(result);
         })
 
-        //======GET API for all orders======// 
-        app.get('/all-orders', async (req, res) => {
-            getAllItem(req, res, orderCollection);
+        //======POST API for reviews======//
+        app.post('/reviews', async (req, res) => {
+            const review = req.body;
+            console.log(review);
+            const result = await reviewCollection.insertOne(review);
+
+            res.json(result);
         })
+
+        //======GET API for reviews======// 
+        app.get('/reviews', async (req, res) => {
+            getAllItem(req, res, reviewCollection);
+        })
+
+
+
+
+
+
+
+
 
         //======PUT API to update order status======//
         app.put('/orders/:id', async (req, res) => {
