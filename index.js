@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const admin = require("firebase-admin");
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
 const ObjectId = require('mongodb').ObjectId;
@@ -8,10 +9,32 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-//Database configuration
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ig1ef.mongodb.net/travelDB?retryWrites=true&w=majority`;
-const uri = 'mongodb+srv://myb-watches:BvIrMEvOfbTJT4Fj@cluster0.ig1ef.mongodb.net/myFirstDatabase?retryWrites=true&w=majority';
+
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+//======Database configuration======//
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ig1ef.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+const verifyToken = async (req, res, next) => {
+    if (req.headers?.authorization?.startsWith('Bearer ')) {
+        const token = req.headers.authorization.split(' ')[1];
+        try {
+            const decodedUser = await admin.auth().verifyIdToken(token);
+            req.decodedEmail = decodedUser.email;
+        }
+        catch {
+
+        }
+
+    }
+    next();
+}
 
 
 //======Custom function for getting all item from Database======//
@@ -56,6 +79,10 @@ const run = async () => {
             res.send(product);
         })
 
+        //======GET API for orders======//
+        app.get('/orders', async (req, res) => {
+            getAllItem(req, res, orderCollection);
+        })
 
         //======POST API for orders======//
         app.post('/orders', async (req, res) => {
@@ -84,6 +111,24 @@ const run = async () => {
             res.json(result);
         })
 
+        //======PUT API to update order status======//
+        // app.put('/orders/:id', async (req, res) => {
+        //     const id = req.params.id;
+
+        //     const filter = { _id: ObjectId(id) };
+        //     const options = { upsert: true };
+
+        //     const updateDoc = {
+        //         $set: {
+        //             orderStatus: "Approved",
+        //         },
+        //     };
+
+        //     const result = await orderCollection.updateOne(filter, updateDoc, options);
+
+        //     res.json(result);
+        // })
+
         //======POST API for reviews======//
         app.post('/reviews', async (req, res) => {
             const review = req.body;
@@ -96,6 +141,17 @@ const run = async () => {
         //======GET API for reviews======// 
         app.get('/reviews', async (req, res) => {
             getAllItem(req, res, reviewCollection);
+        })
+
+        //======GET API for adding user======// 
+        app.get('/users/:email', async (req, res) => {
+            const { email } = req.params;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            let isAdmin = false;
+            if (user?.role === 'admin') isAdmin = true;
+
+            res.json({ admin: isAdmin })
         })
 
         //======POST API for adding user======// 
@@ -120,32 +176,27 @@ const run = async () => {
             res.json(result);
         })
 
+        //======PUT API for making admin======//
+        app.put('/users/admin', verifyToken, async (req, res) => {
+            const user = req.body;
+            const requester = req.decodedEmail;
+            if (requester) {
+                const requesterAccount = await usersCollection.findOne({ email: requester });
+                if (requesterAccount.role === 'admin') {
+                    const filter = { email: user.email };
+                    const updateDoc = {
+                        $set: {
+                            role: 'admin'
+                        }
+                    }
+                    const result = await usersCollection.updateOne(filter, updateDoc);
+                    res.json(result);
+                }
 
-
-
-
-
-
-
-
-        //======PUT API to update order status======//
-        // app.put('/orders/:id', async (req, res) => {
-        //     const id = req.params.id;
-
-        //     const filter = { _id: ObjectId(id) };
-        //     const options = { upsert: true };
-
-        //     const updateDoc = {
-        //         $set: {
-        //             orderStatus: "Approved",
-        //         },
-        //     };
-
-        //     const result = await orderCollection.updateOne(filter, updateDoc, options);
-
-        //     res.json(result);
-        // })
-
+            } else {
+                res.status(403).json({ message: 'You can not make admin' })
+            }
+        })
 
     } finally {
         // await client.close();
