@@ -30,6 +30,7 @@ const run = async () => {
         const productCollection = database.collection("products");
         const orderCollection = database.collection("orders");
         const reviewCollection = database.collection("reviews");
+        const usersCollection = database.collection('users');
         console.log('DB is connected');
 
         //======POST API for Add Product======//
@@ -97,6 +98,28 @@ const run = async () => {
             getAllItem(req, res, reviewCollection);
         })
 
+        //======POST API for adding user======// 
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const result = await usersCollection.insertOne(user);
+            console.log(result);
+            res.json(result)
+        })
+
+        //======PUT API for adding or updating user======// 
+        app.put('/users', async (req, res) => {
+            const user = req.body;
+            console.log(user);
+            const filter = { email: user.email };
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: user
+            }
+
+            const result = await usersCollection.updateOne(filter, updateDoc, options);
+            res.json(result);
+        })
+
 
 
 
@@ -106,22 +129,22 @@ const run = async () => {
 
 
         //======PUT API to update order status======//
-        app.put('/orders/:id', async (req, res) => {
-            const id = req.params.id;
+        // app.put('/orders/:id', async (req, res) => {
+        //     const id = req.params.id;
 
-            const filter = { _id: ObjectId(id) };
-            const options = { upsert: true };
+        //     const filter = { _id: ObjectId(id) };
+        //     const options = { upsert: true };
 
-            const updateDoc = {
-                $set: {
-                    orderStatus: "Approved",
-                },
-            };
+        //     const updateDoc = {
+        //         $set: {
+        //             orderStatus: "Approved",
+        //         },
+        //     };
 
-            const result = await orderCollection.updateOne(filter, updateDoc, options);
+        //     const result = await orderCollection.updateOne(filter, updateDoc, options);
 
-            res.json(result);
-        })
+        //     res.json(result);
+        // })
 
 
     } finally {
