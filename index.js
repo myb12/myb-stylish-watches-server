@@ -44,6 +44,14 @@ const getAllItem = async (req, res, collection) => {
     res.send(items);
 }
 
+//======Custom function for deleting an item from Database======//
+const deleteItem = async (req, res, collection) => {
+    const id = req.params.id;
+    const query = { _id: ObjectId(id) };
+    const result = await collection.deleteOne(query);
+    res.json(result);
+}
+
 
 
 const run = async () => {
@@ -68,6 +76,11 @@ const run = async () => {
         //======GET API for products======// 
         app.get('/products', async (req, res) => {
             getAllItem(req, res, productCollection);
+        })
+
+        //======DELETE API for product======// 
+        app.delete('/products/:id', async (req, res) => {
+            deleteItem(req, res, productCollection);
         })
 
         //=====GET API for specific product======//
@@ -103,31 +116,26 @@ const run = async () => {
 
         //=====DELETE API for my-orders======//
         app.delete('/my-orders/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: ObjectId(id) };
-
-            const result = await orderCollection.deleteOne(query);
-
-            res.json(result);
+            deleteItem(req, res, orderCollection);
         })
 
         //======PUT API to update order status======//
-        // app.put('/orders/:id', async (req, res) => {
-        //     const id = req.params.id;
+        app.put('/orders/:id', async (req, res) => {
+            const id = req.params.id;
 
-        //     const filter = { _id: ObjectId(id) };
-        //     const options = { upsert: true };
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
 
-        //     const updateDoc = {
-        //         $set: {
-        //             orderStatus: "Approved",
-        //         },
-        //     };
+            const updateDoc = {
+                $set: {
+                    orderStatus: "Shipped",
+                },
+            };
 
-        //     const result = await orderCollection.updateOne(filter, updateDoc, options);
+            const result = await orderCollection.updateOne(filter, updateDoc, options);
 
-        //     res.json(result);
-        // })
+            res.json(result);
+        })
 
         //======POST API for reviews======//
         app.post('/reviews', async (req, res) => {
