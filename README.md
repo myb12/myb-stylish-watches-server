@@ -1,6 +1,7 @@
 ## MYB Stylish Watches - Niche Website for Sellling Watches
 
-## Live-link: https://myb-stylish-watches.web.app/
+## Live link: https://myb-stylish-watches.web.app/
+## Client site link: https://github.com/myb12/myb-stylish-watches-client
 
 ### To run locally
 * Simply clone the repository. Run "npm install" command.
